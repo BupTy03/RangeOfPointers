@@ -71,6 +71,146 @@ namespace range_of_ptrs {
 	};
 
 
+	template<typename InIter, typename OutIter>
+	OutIter Copy(InIter first, InIter last, OutIter dest)
+	{
+		for (; first != last; ++dest, ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			*(*dest) = *(*first);
+		}
+		return dest;
+	}
+
+	template<typename InIter, typename SizeType, typename OutIter>
+	OutIter CopyN(InIter first, SizeType count, OutIter dest)
+	{
+		if (count > 0) {
+			while (true) {
+				*(*dest) = *(*first);
+				++dest;
+				--count;
+				if (count == 0) {
+					break;
+				}
+				++first;
+			}
+		}
+		return dest;
+	}
+
+	template<typename InIter, typename OutIter>
+	OutIter CopyBackward(InIter first, InIter last, OutIter dest)
+	{
+		while (first != last) {
+			*(*(--dest)) = *(*(--last));
+		}
+		return dest;
+	}
+
+	template<typename InIter, typename OutIter, typename Pred>
+	OutIter CopyIf(InIter first, InIter last, OutIter dest, Pred pred)
+	{
+		for (; first != last; ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			if (pred(*(*first))) {
+				*(*dest) = *(*first);
+				++dest;
+			}
+		}
+
+		return dest;
+	}
+
+
+	template<typename InIter, typename OutIter>
+	OutIter ReplaceCopy(InIter first, InIter last, OutIter dest)
+	{
+		using ValueType = std::decay_t<decltype(*(*dest))>;
+
+		for (; first != last; ++dest, ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			(*dest)->~ValueType();
+			::new (*dest) ValueType(*(*first));
+		}
+
+		return dest;
+	}
+
+	template<typename InIter, typename OutIter, typename Pred>
+	OutIter ReplaceCopyIf(InIter first, InIter last, OutIter dest, Pred pred)
+	{
+		using ValueType = std::decay_t<decltype(*(*dest))>;
+
+		for (; first != last; ++dest, ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			if (pred(*(*first))) {
+				(*dest)->~ValueType();
+				::new (*dest) ValueType(*(*first));
+			}
+		}
+
+		return dest;
+	}
+
+
+	template<typename InIter, typename OutIter>
+	OutIter Clone(InIter first, InIter last, OutIter dest)
+	{
+		for (; first != last; ++dest, ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			*dest = (*first)->Clone();
+		}
+		return dest;
+	}
+
+	template<typename InIter, typename OutIter, typename Pred>
+	OutIter CloneIf(InIter first, InIter last, OutIter dest, Pred pred)
+	{
+		for (; first != last; ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			if (pred(*(*first))) {
+				*dest = (*first)->Clone();
+				++dest;
+			}
+		}
+		return dest;
+	}
+
+
+	template<typename InIter, typename OutIter>
+	OutIter ReplaceClone(InIter first, InIter last, OutIter dest)
+	{
+		for (; first != last; ++dest, ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			delete(*dest);
+			*dest = (*first)->Clone();
+		}
+		return dest;
+	}
+
+	template<typename InIter, typename OutIter, typename Pred>
+	OutIter ReplaceCloneIf(InIter first, InIter last, OutIter dest, Pred pred)
+	{
+		for (; first != last; ++first) {
+			assert(*dest != nullptr);
+			assert(*first != nullptr);
+			if (pred(*(*first))) {
+				delete(*dest);
+				*dest = (*first)->Clone();
+				++dest;
+			}
+		}
+		return dest;
+	}
+
+
 	template<typename ForwardIt, typename T>
 	ForwardIt Remove(ForwardIt first, ForwardIt last, const T& value)
 	{
@@ -163,7 +303,7 @@ namespace range_of_ptrs {
 		result.reserve(std::distance(first, last));
 		std::transform(first, last, std::back_inserter(result), [](auto pLeft) {
 			assert(pLeft != nullptr);
-			return ValueType(*pLeft);
+			return new ValueType(*pLeft);
 		});
 
 		backout.release();
@@ -172,8 +312,8 @@ namespace range_of_ptrs {
 
 	template<typename FromContainer, typename ToContainer = FromContainer>
 	ToContainer DeepCopy(const FromContainer& container)
-	{
-		return DeepCopyOfRange<ToContainer>(std::cbegin(container), std::cend(container));
+	{ 
+		return DeepCopyOfRange<ToContainer>(std::cbegin(container), std::cend(container)); 
 	}
 
 
